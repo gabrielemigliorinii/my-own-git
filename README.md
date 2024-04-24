@@ -1,4 +1,4 @@
-# Building my own git, following build-your-own-x
+# Building my own git in python, following build-your-own-x
 
 ## Some commands:
 
