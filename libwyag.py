@@ -11,9 +11,23 @@ import re       # regex
 import sys      # need this in order to access command-line arguments (in sys.argv)
 import zlib     # git compresses everything using zib
 
-argparser = argparse.ArgumentParser(description="A random...")
+
+# ArgumentParser instance
+argparser = argparse.ArgumentParser(description="A random description...")
+
+# This line allows us to add commands when we call the script
 argsubparsers = argparser.add_subparsers(title="Commands", dest="command")
-argsubparsers.required = True   
+
+# Is mandatory to specify at least a command, for instance when we call
+# git we need to give at least one command, we don't write only 'git'
+argsubparsers.required = True  
+
+
+# Add the 'init' argument 
+argsp = argsubparsers.add_parser("init", help="Initialize a new, empty repository.")
+
+# Add the value 'path' for the argument 'init'
+argsp.add_argument("path", metavar="directory", nargs="?", default=".", help="Where to create the repository.")
 
 
 def main(argv=sys.argv[1:]):
@@ -21,7 +35,7 @@ def main(argv=sys.argv[1:]):
     args = argparser.parse_args(argv)
 
     match args.command:
-        case "add"          : test(args)
+        case "add"          : cmd_init(args)
         case "cat-file"     : cmd_cat_file(args)
         case "check-ignore" : cmd_check_ignore(args)
         case "checkout"     : cmd_checkout(args)
@@ -37,6 +51,12 @@ def main(argv=sys.argv[1:]):
         case "status"       : cmd_status(args)
         case "tag"          : cmd_tag(args)
         case _              : print("Bad command.")
+
+
+# Bridge function for the command init
+def cmd_init(args):
+    repo_create(args.path)
+
 
 
 class GitRepository (object):
