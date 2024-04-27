@@ -16,3 +16,5 @@ $ sudo mv [download folder]/my-own-git /usr/local/bin
 $ echo "export PATH=$PATH:/usr/local/bin/my-own-git" >> ~/.bashrc
 $ source ~/.bashrc
 ```
+
+4. Now you can use 'wyag' like the 'git' command.
