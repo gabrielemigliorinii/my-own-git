@@ -3,6 +3,7 @@
 ## How to install
 
 1. Install python version 3.10^
+
 2. Download my-own-git and move it in /usr/local/bin
 
 ```bash
