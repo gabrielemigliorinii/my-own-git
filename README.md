@@ -8,7 +8,7 @@ Following build your own x
 
 <br />
 
-2. Download my-own-git and move it in /usr/local/bin
+2. Download my-own-git and move it to /usr/local/bin
 
 ```bash
 $ sudo mv [download folder]/my-own-git /usr/local/bin
