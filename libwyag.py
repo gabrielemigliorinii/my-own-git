@@ -12,6 +12,9 @@ import sys      # need this in order to access command-line arguments (in sys.ar
 import zlib     # git compresses everything using zib
 
 
+# Global vars
+# ------------------------------------------------------------------------------------
+
 # ArgumentParser instance
 argparser = argparse.ArgumentParser(description="A random description...")
 
@@ -23,11 +26,26 @@ argsubparsers = argparser.add_subparsers(title="Commands", dest="command")
 argsubparsers.required = True  
 
 
-# Add the 'init' argument 
+# Add 'init' command 
 argsp = argsubparsers.add_parser("init", help="Initialize a new, empty repository.")
 
 # Add the value 'path' for the argument 'init'
 argsp.add_argument("path", metavar="directory", nargs="?", default=".", help="Where to create the repository.")
+
+
+
+# Add 'cat-file' command
+argsp = argsubparsers.add_parser("cat-file", help="Provide content of repository objects")
+
+# Add the value 'type' for the argument 'cat-file'
+argsp.add_argument("type", metavar="type", choices=["blob", "commit", "tag", "tree"], help="Specify the type")
+
+# Add the value 'object' (a SHA1 hex string) for the argument 'cat-file', SHA1
+argsp.add_argument("object", metavar="object", help="The object to display")
+
+
+# ------------------------------------------------------------------------------------
+
 
 
 def main(argv=sys.argv[1:]):
@@ -53,10 +71,25 @@ def main(argv=sys.argv[1:]):
         case _              : print("Bad command.")
 
 
-# Bridge function for the command init
+
+# -----------------------------------------------------------------------------------------
+# Begin bridge functions
+
+
 def cmd_init(args):
     repo_create(args.path)
 
+def cmd_cat_file(args):
+    repo = repo_find()
+    cat_file(repo, args.object, fmt=args.type.encode())
+
+# End bridge functions
+# -----------------------------------------------------------------------------------------
+
+
+
+# -----------------------------------------------------------------------------------------
+# Begin classes
 
 
 class GitRepository (object):
@@ -91,6 +124,35 @@ class GitRepository (object):
             if vers != 0:
                 raise Exception("Unsupported repositoryformatversion %s" % vers)
 
+class GitObject (object):
+
+    def __init__(self, data=None):
+        if data != None:
+            self.deserialize(data)
+        else:
+            self.init()
+
+    def serialize(self, repo):
+        """This function MUST be implemented by subclasses.
+        
+It must read the object's contents from self.data, a byte string, and do
+whatever it takes to convert it into a meaningful representation.  What exactly that means depend on each subclass."""
+        raise Exception("Unimplemented!")
+
+    def deserialize(self, data):
+        raise Exception("Unimplemented!")
+
+    def init(self):
+        pass # Just do nothing. This is a reasonable default!
+
+# End classes
+# -----------------------------------------------------------------------------------------
+
+
+
+
+# -----------------------------------------------------------------------------------------
+# Begin utilities 
 
 def repo_file(repo, *path, mkdir=False):
     """Same as repo_path, but create dirname(*path) if absent.  For
@@ -190,4 +252,88 @@ def repo_default_config():
 
     return ret 
     
- # _
+
+# Find the root of the current repository
+def repo_find(path=".", required=True):
+
+    # relative to absolute path
+    path = os.path.realpath(path)
+
+    # if we are in the root (bacause we've found .git repo), return an instance of the class GitRepository
+    if os.path.isdir(os.path.join(path, ".git")):
+        return GitRepository(path)
+
+    # If we haven't returned, recurse in parent, if w
+    parent = os.path.realpath(os.path.join(path, ".."))
+
+    # If the parent is equals to path, we are already in the root dir, and .git is missing
+    if parent == path:
+        # Bottom case
+        # os.path.join("/", "..") == "/":
+        # If parent==path, then path is root.
+        if required:
+            raise Exception("No git directory.")
+        else:
+            return None
+
+    # Recursive case
+    return repo_find(parent, required)
+
+def object_read(repo, sha):
+
+    path = repo_path(repo, "objects", sha[0:2], sha[2:])
+
+    if not os.path.isfile(path):
+        return None
+
+    with open(path, "rb") as f:
+
+        # every object is compressed with zlib
+        raw = zlib.decompress(f.read())
+
+        x = raw.find(b' ')
+        fmt = raw[0:x]
+
+        # Read and validate object size
+        y = raw.find(b'\x00', x)
+        size = int(raw[x:y].decode("ascii"))
+
+        if size != len(raw)-y-1:
+            raise Exception("Malformed object {0}: bad length".format(sha))
+
+        # Pick constructor
+        match fmt:
+            case b'commit' : c=GitCommit
+            case b'tree'   : c=GitTree
+            case b'tag'    : c=GitTag
+            case b'blob'   : c=GitBlob
+            case _:
+                raise Exception("Unknown type {0} for object {1}".format(fmt.decode("ascii"), sha))
+
+        # Call constructor and return object
+        return c(raw[y+1:])
+
+
+def object_write(obj, repo=None):
+
+    # Serialize object data
+    data = obj.serialize()
+
+    # Add header
+    result = obj.fmt + b' ' + str(len(data)).encode() + b'\x00' + data
+
+    # Compute hash
+    sha = hashlib.sha1(result).hexdigest()
+
+    if repo:
+        # Compute path
+        path=repo_file(repo, "objects", sha[0:2], sha[2:], mkdir=True)
+
+        if not os.path.exists(path):
+            with open(path, 'wb') as f:
+                # Compress and write
+                f.write(zlib.compress(result))
+    return sha
+
+# End utilities
+# -----------------------------------------------------------------------------------------
