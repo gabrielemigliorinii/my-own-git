@@ -8,21 +8,22 @@ Following build your own x
 
 <br />
 
-2. Download my-own-git and move it to /usr/local/bin
+2. Download my-own-git
+
+3. Give executution permission to my-own-git/wyag
 
 ```bash
-$ sudo mv [download folder]/my-own-git /usr/local/bin
+$ chmod +x wyag
 ```
 
 <br />
 
-3. Add the absolute path of my-own-git into the environment variable file, in this way the 'wyag' script can be run at any location on the filesystem
+4. Installation
 
 ```bash
-$ echo "export PATH=$PATH:/usr/local/bin/my-own-git" >> ~/.bashrc
-$ source ~/.bashrc
+$ sudo python3 setup.py install
 ```
 
 <br />
 
-4. Now you can use 'wyag' like the 'git' command.
+Now you can use 'wyag' like the 'git' command.
