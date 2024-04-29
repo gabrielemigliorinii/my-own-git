@@ -1,5 +1,4 @@
 # Building my own git in python
-<br />
 
 ## How to install
 
