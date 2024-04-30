@@ -62,7 +62,6 @@ argsp.add_argument("path", help="Read object from <file>")
 # ------------------------------------------------------------------------------------
 
 
-
 def main(argv=sys.argv[1:]):
 
     args = argparser.parse_args(argv)
@@ -99,6 +98,7 @@ def cmd_cat_file(args):
     cat_file(repo, args.object, fmt=args.type.encode())
 
 def cmd_hash_object(args):
+    
     if args.write:
         repo = repo_find()
     else:
@@ -107,6 +107,7 @@ def cmd_hash_object(args):
     with open(args.path, "rb") as fd:
         sha = object_hash(fd, args.type.encode(), repo)
         print(sha)
+
 
 # End bridge functions
 # -----------------------------------------------------------------------------------------
@@ -370,8 +371,14 @@ def object_write(obj, repo=None):
                 f.write(zlib.compress(result))
     return sha
 
-def cat_file(repo, obj, fmt=None):
-    obj = object_read(repo, object_find(repo, obj, fmt=fmt))
+def cat_file(repo, sha, fmt=None):
+
+    obj = object_read(repo, object_find(repo, sha, fmt=fmt))
+    
+    if obj == None:
+        print("Not a valid object name: %s" % sha)
+        return
+        
     sys.stdout.buffer.write(obj.serialize())
 
 # Temp function that has to be implemented. Now it returns just 'name' (SHA1 hex string)
@@ -390,7 +397,7 @@ def object_hash(fd, fmt, repo=None):
         case b'tag'    : obj=GitTag(data)
         case b'blob'   : obj=GitBlob(data)
         case _: raise Exception("Unknown type %s!" % fmt)
-    
+
     return object_write(obj, repo)
 
 # End utilities
