@@ -26,11 +26,15 @@ argsubparsers = argparser.add_subparsers(title="Commands", dest="command")
 argsubparsers.required = True  
 
 
+
+
 # Add 'init' command 
 argsp = argsubparsers.add_parser("init", help="Initialize a new, empty repository.")
 
 # Add the value 'path' for the argument 'init'
 argsp.add_argument("path", metavar="directory", nargs="?", default=".", help="Where to create the repository.")
+
+
 
 
 # Add 'cat-file' command
@@ -41,6 +45,18 @@ argsp.add_argument("type", metavar="type", choices=["blob", "commit", "tag", "tr
 
 # Add the value 'object' (a SHA1 hex string) for the argument 'cat-file', SHA1
 argsp.add_argument("object", metavar="object", help="The object to display")
+
+
+
+
+argsp = argsubparsers.add_parser("hash-object", help="Compute object ID and optionally creates a blob from a file")
+
+argsp.add_argument("-t", metavar="type", dest="type", choices=["blob", "commit", "tag", "tree"], default="blob", help="Specify the type")
+
+argsp.add_argument("-w", dest="write", action="store_true", help="Actually write the object into the database")
+
+argsp.add_argument("path", help="Read object from <file>")
+
 
 
 # ------------------------------------------------------------------------------------
@@ -82,6 +98,15 @@ def cmd_cat_file(args):
     repo = repo_find()
     cat_file(repo, args.object, fmt=args.type.encode())
 
+def cmd_hash_object(args):
+    if args.write:
+        repo = repo_find()
+    else:
+        repo = None
+
+    with open(args.path, "rb") as fd:
+        sha = object_hash(fd, args.type.encode(), repo)
+        print(sha)
 
 # End bridge functions
 # -----------------------------------------------------------------------------------------
@@ -352,6 +377,21 @@ def cat_file(repo, obj, fmt=None):
 # Temp function that has to be implemented. Now it returns just 'name' (SHA1 hex string)
 def object_find(repo, name, fmt=None, follow=True):
     return name
+
+
+def object_hash(fd, fmt, repo=None):
+    """ Hash object, writing it to repo if provided."""
+    data = fd.read()
+
+    # Choose constructor according to fmt argument
+    match fmt:
+        case b'commit' : obj=GitCommit(data)
+        case b'tree'   : obj=GitTree(data)
+        case b'tag'    : obj=GitTag(data)
+        case b'blob'   : obj=GitBlob(data)
+        case _: raise Exception("Unknown type %s!" % fmt)
+    
+    return object_write(obj, repo)
 
 # End utilities
 # -----------------------------------------------------------------------------------------
