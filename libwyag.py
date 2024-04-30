@@ -171,15 +171,29 @@ whatever it takes to convert it into a meaningful representation.  What exactly 
     def init(self):
         pass # Just do nothing. This is a reasonable default!
 
-class GitBlob(GitObject):
+class GitBlob (GitObject):
 
-    fmt=b'blob'
+    fmt = b'blob'
 
     def serialize(self):
         return self.blobdata
 
     def deserialize(self, data):
         self.blobdata = data
+
+class GitCommit (GitObject):
+    
+    fmt = b'commit'
+
+    def deserialize(self, data):
+        self.commit = commit_parse(data)
+
+    def serialize(self):
+        return commit_serialize(self.kvlm)
+
+    def init(self):
+        self.commit = dict()
+
 
 # End classes
 # -----------------------------------------------------------------------------------------
@@ -399,6 +413,90 @@ def object_hash(fd, fmt, repo=None):
         case _: raise Exception("Unknown type %s!" % fmt)
 
     return object_write(obj, repo)
+
+
+
+def commit_parse(raw, start=0, dct=None):
+    
+    if not dct:
+        dct = collections.OrderedDict()
+
+        # You CANNOT declare the argument as dct=OrderedDict() or all
+        # call to the functions will endlessly grow the same dict.
+
+            # Not sure about that
+
+    # We search for the next space and the next newline.
+    spc = raw.find(b' ', start)
+    nl = raw.find(b'\n', start)
+
+    # If space appears before newline, we have a keyword.  Otherwise,
+    # it's the final message, which we just read to the end of the file.
+
+
+
+    # Base case
+    # =========
+    # If newline appears first (or there's no space at all, in which
+    # case find returns -1), we assume a blank line.  A blank line
+    # means the remainder of the data is the message.  We store it in
+    # the dictionary, with None as the key, and return.
+
+    if (spc < 0) or (nl < spc):
+        assert nl == start
+        dct[None] = raw[start+1:]
+        return dct
+
+
+
+    # Recursive case
+    # ==============
+    # we read a key-value pair and recurse for the next.
+    key = raw[start:spc]
+
+    # Find the end of the value.  Continuation lines begin with a
+    # space, so we loop until we find a "\n" not followed by a space.
+    end = start
+    while True:
+        end = raw.find(b'\n', end+1)
+        if raw[end+1] != ord(' '): break
+
+    # Grab the value
+    # Also, drop the leading space on continuation lines
+    value = raw[spc+1:end].replace(b'\n ', b'\n')
+
+    # Don't overwrite existing data contents
+    if key in dct:
+        if type(dct[key]) == list:
+            dct[key].append(value)
+        else:
+            dct[key] = [ dct[key], value ]
+    else:
+        dct[key]=value
+
+    return commit_parse(raw, start=end+1, dct=dct)
+
+def commit_serialize(commit):
+
+    ret = b''
+
+    # Output fields
+    for k in commit.keys():
+        # Skip the message itself
+        if k == None: continue
+        val = commit[k]
+        # Normalize to a list
+        if type(val) != list:
+            val = [ val ]
+
+        for v in val:
+            ret += k + b' ' + (v.replace(b'\n', b'\n ')) + b'\n'
+
+    # Append message
+    ret += b'\n' + commit[None] + b'\n'
+
+    return ret
+
 
 # End utilities
 # -----------------------------------------------------------------------------------------
