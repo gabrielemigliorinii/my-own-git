@@ -32,6 +32,17 @@ argsp = argsubparsers.add_parser("init", help="Initialize a new, empty repositor
 # Add the value 'path' for the argument 'init'
 argsp.add_argument("path", metavar="directory", nargs="?", default=".", help="Where to create the repository.")
 
+
+# Add 'cat-file' command
+argsp = argsubparsers.add_parser("cat-file", help="Provide content of repository objects")
+
+# Add the value 'type' for the argument 'cat-file'
+argsp.add_argument("type", metavar="type", choices=["blob", "commit", "tag", "tree"], help="Specify the type")
+
+# Add the value 'object' (a SHA1 hex string) for the argument 'cat-file', SHA1
+argsp.add_argument("object", metavar="object", help="The object to display")
+
+
 # ------------------------------------------------------------------------------------
 
 
@@ -41,7 +52,7 @@ def main(argv=sys.argv[1:]):
     args = argparser.parse_args(argv)
 
     match args.command:
-        case "add"          : cmd_init(args)
+        case "add"          : cmd_add(args)
         case "cat-file"     : cmd_cat_file(args)
         case "check-ignore" : cmd_check_ignore(args)
         case "checkout"     : cmd_checkout(args)
@@ -66,6 +77,11 @@ def main(argv=sys.argv[1:]):
 
 def cmd_init(args):
     repo_create(args.path)
+
+def cmd_cat_file(args):
+    repo = repo_find()
+    cat_file(repo, args.object, fmt=args.type.encode())
+
 
 # End bridge functions
 # -----------------------------------------------------------------------------------------
@@ -328,6 +344,14 @@ def object_write(obj, repo=None):
                 # Compress and write
                 f.write(zlib.compress(result))
     return sha
+
+def cat_file(repo, obj, fmt=None):
+    obj = object_read(repo, object_find(repo, obj, fmt=fmt))
+    sys.stdout.buffer.write(obj.serialize())
+
+# Temp function that has to be implemented. Now it returns just 'name' (SHA1 hex string)
+def object_find(repo, name, fmt=None, follow=True):
+    return name
 
 # End utilities
 # -----------------------------------------------------------------------------------------
