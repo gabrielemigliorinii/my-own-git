@@ -32,18 +32,6 @@ argsp = argsubparsers.add_parser("init", help="Initialize a new, empty repositor
 # Add the value 'path' for the argument 'init'
 argsp.add_argument("path", metavar="directory", nargs="?", default=".", help="Where to create the repository.")
 
-
-
-# Add 'cat-file' command
-argsp = argsubparsers.add_parser("cat-file", help="Provide content of repository objects")
-
-# Add the value 'type' for the argument 'cat-file'
-argsp.add_argument("type", metavar="type", choices=["blob", "commit", "tag", "tree"], help="Specify the type")
-
-# Add the value 'object' (a SHA1 hex string) for the argument 'cat-file', SHA1
-argsp.add_argument("object", metavar="object", help="The object to display")
-
-
 # ------------------------------------------------------------------------------------
 
 
@@ -78,10 +66,6 @@ def main(argv=sys.argv[1:]):
 
 def cmd_init(args):
     repo_create(args.path)
-
-def cmd_cat_file(args):
-    repo = repo_find()
-    cat_file(repo, args.object, fmt=args.type.encode())
 
 # End bridge functions
 # -----------------------------------------------------------------------------------------
@@ -144,6 +128,16 @@ whatever it takes to convert it into a meaningful representation.  What exactly 
 
     def init(self):
         pass # Just do nothing. This is a reasonable default!
+
+class GitBlob(GitObject):
+
+    fmt=b'blob'
+
+    def serialize(self):
+        return self.blobdata
+
+    def deserialize(self, data):
+        self.blobdata = data
 
 # End classes
 # -----------------------------------------------------------------------------------------
