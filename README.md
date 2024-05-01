@@ -1,29 +1,17 @@
-# Building my own git in python
+# Building my own git in Python
 
 ## How to install
 
-1. Install python version 3.10^
+- Install Python version 3.10^
+- Download the repository
+- Give execution permission to `my-own-git/mygit`
 
-2. Download the repository
+    ```bash
+    $ chmod +x mygit
+    ```
 
-3. Give executution permission to my-own-git/mygit
+- Installation
 
-```bash
-$ chmod +x mygit
-```
-
-4. Installation
-
-Production
-```bash
-$ sudo python3 setup.py install
-```
-
-Development
-```bash
-$ sudo python3 setup.py develop
-```
-
-<br />
-
-Now you can use 'mygit' like the 'git' command.
+  ```bash
+  $ sudo python3 setup.py install
+  ```
