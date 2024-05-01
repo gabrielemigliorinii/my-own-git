@@ -443,11 +443,10 @@ def commit_parse(raw, start=0, dct=None):
     # the dictionary, with None as the key, and return.
 
     if (spc < 0) or (nl < spc):
+
         assert nl == start
         dct[None] = raw[start+1:]
         return dct
-
-
 
     # Recursive case
     # ==============
