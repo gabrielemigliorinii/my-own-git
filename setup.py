@@ -1,12 +1,12 @@
 from setuptools import setup
 
 setup (
-    name='wyag-version-control',
+    name='mygit-version-control',
     version='0.1',
-    py_modules=['libwyag'],
+    py_modules=['mygitlib'],
     entry_points={
         'console_scripts': [
-            'wyag = libwyag:main',
+            'mygit = mygitlib:main',
         ],
     },
 )
