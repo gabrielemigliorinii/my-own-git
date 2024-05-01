@@ -14,8 +14,14 @@ $ chmod +x mygit
 
 4. Installation
 
+Production
 ```bash
 $ sudo python3 setup.py install
+```
+
+Development
+```bash
+$ sudo python3 setup.py develop
 ```
 
 <br />
