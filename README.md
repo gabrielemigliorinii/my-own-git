@@ -6,10 +6,10 @@
 
 2. Download the repository
 
-3. Give executution permission to my-own-git/wyag
+3. Give executution permission to my-own-git/mygit
 
 ```bash
-$ chmod +x wyag
+$ chmod +x mygit
 ```
 
 4. Installation
@@ -20,4 +20,4 @@ $ sudo python3 setup.py install
 
 <br />
 
-Now you can use 'wyag' like the 'git' command.
+Now you can use 'mygit' like the 'git' command.
