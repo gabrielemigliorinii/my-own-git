@@ -212,6 +212,26 @@ class GitCommit (GitObject):
         self.commit = dict()
 
 
+class GitTreeLeaf (object):
+
+    def __init__(self, mode, path, sha):
+        self.mode = mode
+        self.path = path
+        self.sha = sha
+
+class GitTree(GitObject):
+    fmt=b'tree'
+
+    def deserialize(self, data):
+        self.items = tree_parse(data)
+
+    def serialize(self):
+        return tree_serialize(self)
+
+    def init(self):
+        self.items = list()
+
+
 # End classes
 # -----------------------------------------------------------------------------------------
 
@@ -546,6 +566,85 @@ def log_graphviz(repo, sha, seen):
         p = p.decode("ascii")
         print ("  c_{0} -> c_{1};".format(sha, p))
         log_graphviz(repo, p, seen)
+
+
+# Example of a tree object leaf: [mode] 0x20 [path] 0x00 [sha-1]
+def tree_parse_one(raw, start=0):
+
+    # Find the space terminator (0x20) of the mode
+    mode_len = raw.find(b' ', start)
+    
+    # the mode's length must be 5 or 6
+    assert mode_len-start == 5 or mode_len-start==6
+
+    # Read the mode
+    mode = raw[start:mode_len]
+
+    if len(mode) == 5:
+        # Normalize to six bytes.
+        mode = b" " + mode
+
+    # Find the NULL terminator of the path
+    path_len = raw.find(b'\x00', mode_len)
+
+    # and read the path
+    path = raw[mode_len+1 : path_len]
+
+    # Read the SHA and convert to a hex string
+    sha = format(int.from_bytes(raw[path_len+1 : path_len+21], "big"), "040x")
+
+    return path_len+21, GitTreeLeaf(mode, path.decode("utf8"), sha)
+
+
+# “real” parser which just calls the previous one in a loop, until input data is exhausted.
+def tree_parse(raw):
+
+    pos = 0
+    max = len(raw)
+    ret = list()
+    
+    while pos < max:
+        pos, data = tree_parse_one(raw, pos)
+        ret.append(data)
+
+    return ret
+
+
+
+# Notice this isn't a comparison function, but a conversion function.
+# Python's default sort doesn't accept a custom comparison function,
+# like in most languages, but a `key` arguments that returns a new
+# value, which is compared using the default rules.  So we just return
+# the leaf name, with an extra / if it's a directory.
+
+def tree_leaf_sort_key(leaf):
+    
+    if leaf.mode.startswith(b"10"):
+        return leaf.path
+    else:
+        return leaf.path + "/"
+
+
+def tree_serialize(obj):
+
+    # This function sorts the tree object by the path of the leafs (read tree_leaf_sort_key() function)
+    obj.items.sort(key=tree_leaf_sort_key)
+    
+    ret = b''
+    
+    for i in obj.items:
+        
+        ret += i.mode
+        ret += b' '
+        ret += i.path.encode("utf8")
+        ret += b'\x00'
+        sha = int(i.sha, 16)
+        ret += sha.to_bytes(20, byteorder="big")
+
+    return ret
+
+
+
 
 
 
