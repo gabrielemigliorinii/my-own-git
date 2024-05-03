@@ -4,7 +4,7 @@
 
 - Install Python version 3.10^
 - Download the repository
-- Give execution permission to `my-own-git/mygit`
+- Give execution permission to `my-own-git/src/bin/mygit`
 
     ```bash
     $ chmod +x mygit
