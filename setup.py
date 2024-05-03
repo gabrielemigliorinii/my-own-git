@@ -6,7 +6,7 @@ setup (
     py_modules=['mygitlib'],
     entry_points={
         'console_scripts': [
-            'mygit = mygitlib:main',
+            'mygit = src.mygitlib:main',
         ],
     },
 )
