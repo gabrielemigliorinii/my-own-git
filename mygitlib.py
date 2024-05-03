@@ -59,6 +59,12 @@ argsp.add_argument("path", help="Read object from <file>")
 
 
 
+
+argsp = argsubparsers.add_parser("log", help="Display history of a given commit.")
+
+argsp.add_argument("commit", default="HEAD", nargs="?", help="Commit to start at.")
+
+
 # ------------------------------------------------------------------------------------
 
 
@@ -108,6 +114,17 @@ def cmd_hash_object(args):
         sha = object_hash(fd, args.type.encode(), repo)
         print(sha)
 
+
+def cmd_log(args):
+
+    repo = repo_find()
+
+    print("digraph mygitlog{")
+    print("  node[shape=rect]")
+    
+    log_graphviz(repo, object_find(repo, args.commit), set())
+    
+    print("}")
 
 # End bridge functions
 # -----------------------------------------------------------------------------------------
@@ -189,7 +206,7 @@ class GitCommit (GitObject):
         self.commit = commit_parse(data)
 
     def serialize(self):
-        return commit_serialize(self.kvlm)
+        return commit_serialize(self.commit)
 
     def init(self):
         self.commit = dict()
@@ -495,6 +512,41 @@ def commit_serialize(commit):
     ret += b'\n' + commit[None] + b'\n'
 
     return ret
+
+
+def log_graphviz(repo, sha, seen):
+
+    if sha in seen:
+        return
+    
+    seen.add(sha)
+
+    commit = object_read(repo, sha)
+    short_hash = sha[0:8]
+    message = commit.commit[None].decode("utf8").strip()
+    message = message.replace("\\", "\\\\")
+    message = message.replace("\"", "\\\"")
+
+    if "\n" in message: # Keep only the first line
+        message = message[:message.index("\n")]
+
+    print("  c_{0} [label=\"{1}: {2}\"]".format(sha, sha[0:7], message))
+    assert commit.fmt==b'commit'
+
+    if not b'parent' in commit.commit.keys():
+        # Base case: the initial commit.
+        return
+
+    parents = commit.commit[b'parent']
+
+    if type(parents) != list:
+        parents = [ parents ]
+
+    for p in parents:
+        p = p.decode("ascii")
+        print ("  c_{0} -> c_{1};".format(sha, p))
+        log_graphviz(repo, p, seen)
+
 
 
 # End utilities
