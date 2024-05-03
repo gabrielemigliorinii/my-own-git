@@ -1,6 +1,6 @@
 # Building my own git in Python
 
-## How to install
+## How to install (linux)
 
 - Install Python version 3.10^
 - Download the repository
